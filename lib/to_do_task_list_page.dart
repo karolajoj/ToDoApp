@@ -1,69 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'task_provider.dart';
+import 'add_new_task_page.dart';
 
-class ToDoTaskListPage extends StatefulWidget {
+class ToDoTaskListPage extends ConsumerWidget {
   const ToDoTaskListPage({super.key});
 
   @override
-  ToDoTaskListPageState createState() => ToDoTaskListPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final taskList = ref.watch(taskListProvider);
 
-class ToDoTaskListPageState extends State<ToDoTaskListPage> {
-  final Color _tileColor = Colors.blue[50]!;
-  final Color _hoverColor = Colors.blue[100]!;
-  final Color _clickColor = Colors.blue[200]!;
-  bool _isHovering = false;
-  bool _isClicked = false;
-
-  void _onEnter(PointerEvent details) {
-    setState(() {
-      _isHovering = true;
-    });
-  }
-
-  void _onExit(PointerEvent details) {
-    setState(() {
-      _isHovering = false;
-      _isClicked = false;
-    });
-  }
-
-  void _onTapDown(TapDownDetails details) {
-    setState(() {
-      _isClicked = true;
-    });
-  }
-
-  void _onTapUp(TapUpDetails details) {
-    setState(() {
-      _isClicked = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('To Do List'),
         centerTitle: true,
-        backgroundColor: Colors.orange[200],
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: MouseRegion(
-        onEnter: _onEnter,
-        onExit: _onExit,
-        child: GestureDetector(
-          onTapDown: _onTapDown,
-          onTapUp: _onTapUp,
-          child: ListTile(
-            title: const Text('Task 1'),
-            tileColor: _isClicked
-                ? _clickColor
-                : (_isHovering ? _hoverColor : _tileColor),
-            trailing: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {},
-            ),
-          ),
+      body: Container(
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
+        child: ListView.builder(
+          itemCount: taskList.length,
+          itemBuilder: (context, index) {
+            final task = taskList[index];
+            return ListTile(
+              leading: Checkbox(
+                value: task.isDone,
+                onChanged: (bool? value) {
+                  ref.read(taskListProvider.notifier).toggleTask(task);
+                },
+              ),
+              title: Text(
+                task.title,
+                style: TextStyle(
+                  decoration: task.isDone ? TextDecoration.lineThrough : null, // Przekreślenie tekstu
+                  color: task.isDone ? Colors.grey : null, // Wyszarzenie kolor tekstu
+                ),
+              ),
+              tileColor: task.isDone ? Theme.of(context).colorScheme.inversePrimary.withOpacity(0.3) : null, // Zmiana koloru tła wykonanego zadania
+              trailing: IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () {
+                  ref.read(taskListProvider.notifier).removeTask(task);
+                },
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AddNewTaskPage(task: task),), // Edytowanie zadania
+                );
+              },
+            );
+          },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        foregroundColor: Theme.of(context).colorScheme.onSecondary,
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddNewTaskPage()), // Dodawanie nowego zadania
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
